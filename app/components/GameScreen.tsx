@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Play, RotateCcw } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
 
 interface Point {
   id: number;
@@ -13,7 +12,7 @@ interface Point {
   color: string;
   number: number;
   isHighlighted?: boolean;
-  backgroundColor?: string;
+  isSolid?: boolean;
 }
 
 // Array of vibrant colors
@@ -167,48 +166,52 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
     setSelectedDare(null);
 
     let iterations = 0;
-    const maxIterations = 30;
+    const maxIterations = 40; // More iterations for longer animation
     const selectedIndex = Math.floor(Math.random() * points.length);
     let currentIndex = 0;
 
     const animate = () => {
-      setPoints(prevPoints => 
-        prevPoints.map(p => ({ ...p, isHighlighted: false }))
-      );
-
+      // Calculate delay that increases over time for slowing effect
       const progress = iterations / maxIterations;
-      const delay = 100 + (progress * progress * 400);
+      const delay = 50 + (progress * progress * 800); // Starts fast (50ms), gets much slower
 
+      // Make all circles outlined except the current one
       setPoints(prevPoints => 
         prevPoints.map((p, i) => ({
           ...p,
           isHighlighted: i === currentIndex,
-          isOutlined: i === currentIndex && iterations % 2 === 0 // Alternate between filled and outlined
+          isSolid: i === currentIndex
         }))
       );
 
+      // Move to next circle
       currentIndex = (currentIndex + 1) % points.length;
       iterations++;
 
-      if (iterations < maxIterations) {
+      if (iterations < maxIterations || currentIndex !== selectedIndex) {
+        // Keep going until we hit both the minimum iterations AND land on the selected index
         animationRef.current = setTimeout(animate, delay) as unknown as number;
       } else {
-        // Final selection - keep only the selected point
-        const selectedPoint = points[selectedIndex];
-        
-        // Keep only the selected point, maintaining its original position
-        setPoints([{
-          ...selectedPoint,
-          isHighlighted: true,
-          isOutlined: false
-        }]);
+        // Final selection - keep the selected point solid
+        setPoints(prevPoints => 
+          prevPoints.map((p, i) => ({
+            ...p,
+            isHighlighted: i === selectedIndex,
+            isSolid: i === selectedIndex
+          }))
+        );
         
         // Show dare after delay
         setTimeout(() => {
+          setPoints([{
+            ...points[selectedIndex],
+            isHighlighted: true,
+            isSolid: true
+          }]);
           const randomDare = category.challenges[Math.floor(Math.random() * category.challenges.length)];
           setSelectedDare(randomDare);
           setIsSelecting(false);
-        }, 3000);
+        }, 1000);
       }
     };
 
@@ -309,12 +312,12 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
               borderColor: point.color,
               backgroundColor: selectedDare && point.isHighlighted 
                 ? point.color 
-                : point.isHighlighted && !selectedDare
-                ? point.isOutlined ? 'transparent' : point.color
-                : `${point.color}33`,
-              borderWidth: point.isHighlighted ? '12px' : '8px',
+                : point.isSolid
+                ? point.color
+                : 'transparent',
+              borderWidth: '8px',
               transition: 'all 0.15s ease-in-out',
-              boxShadow: point.isHighlighted && !selectedDare 
+              boxShadow: point.isHighlighted 
                 ? `0 0 30px ${point.color}66` 
                 : 'none',
             }}
