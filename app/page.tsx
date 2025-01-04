@@ -187,54 +187,44 @@ const categoryMetadata = {
 };
 
 export default function Home() {
-  const [selectedCategory, setSelectedCategory] = useState<null | typeof categories[0]>(null);
+  const [selectedCategory, setSelectedCategory] = useState<typeof categories[0] | null>(null);
 
   if (selectedCategory) {
     return <GameScreen category={selectedCategory} onBack={() => setSelectedCategory(null)} />;
   }
 
   return (
-    <main className="min-h-screen p-4 md:p-8" style={{ backgroundColor: '#eff6fb' }}>
+    <div className="min-h-screen p-4 md:p-8 bg-gray-50">
       <div className="max-w-4xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
-            Choose Your Adventure
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Select a category to start the game
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {categories.map((category, index) => {
-            const metadata = categoryMetadata[category.id as keyof typeof categoryMetadata];
-
-            return (
-              <motion.div
-                key={category.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                  transition: { delay: index * 0.1 }
-                }}
-              >
-                <CategoryCard
-                  name={category.name}
-                  description={metadata.description}
-                  icon={metadata.icon}
-                  color={metadata.color}
-                  onClick={() => setSelectedCategory(category)}
-                />
-              </motion.div>
-            );
-          })}
+        <h1 className="text-4xl font-bold mb-2">Dare or Drink</h1>
+        <p className="text-muted-foreground mb-8">Choose a category to start playing!</p>
+        
+        <div className="grid gap-4 md:grid-cols-2">
+          {categories.map((category) => (
+            <CategoryCard
+              key={category.id}
+              id={category.id}
+              name={category.name}
+              description={`${category.challenges.length} dares`}
+              icon={
+                category.id === 'bar-club' ? Beer :
+                category.id === 'home-party' ? HomeIcon :
+                category.id === 'restaurant' ? UtensilsCrossed :
+                category.id === 'date-night' ? Heart :
+                Beer
+              }
+              color={
+                category.id === 'bar-club' ? '#0ea5e9' :
+                category.id === 'home-party' ? '#22c55e' :
+                category.id === 'restaurant' ? '#f97316' :
+                category.id === 'date-night' ? '#ec4899' :
+                '#8b5cf6'
+              }
+              onClick={() => setSelectedCategory(category)}
+            />
+          ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -113,9 +113,18 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
   const [countdown, setCountdown] = useState<number>(5);
   const [lastTouchTime, setLastTouchTime] = useState<number>(Date.now());
+  const [customDares, setCustomDares] = useState<string[]>([]);
   const animationRef = useRef<number>();
   const gameAreaRef = useRef<HTMLDivElement>(null);
   const countdownRef = useRef<NodeJS.Timeout>();
+
+  // Load custom dares from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(`customDares-${category.id}`);
+    if (stored) {
+      setCustomDares(JSON.parse(stored));
+    }
+  }, [category.id]);
 
   useEffect(() => {
     if (points.length > 0) {
@@ -233,14 +242,14 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
     setSelectedDare(null);
 
     let iterations = 0;
-    const maxIterations = 40; // More iterations for longer animation
+    const maxIterations = 20; // Reduced from 40 to 20 for faster selection
     const selectedIndex = Math.floor(Math.random() * points.length);
     let currentIndex = 0;
 
     const animate = () => {
       // Calculate delay that increases over time for slowing effect
       const progress = iterations / maxIterations;
-      const delay = 50 + (progress * progress * 800); // Starts fast (50ms), gets much slower
+      const delay = 25 + (progress * progress * 400); // Reduced initial delay from 50 to 25, and max slowdown from 800 to 400
 
       // Make all circles outlined except the current one
       setPoints(prevPoints =>
@@ -275,10 +284,13 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
             isHighlighted: true,
             isSolid: true
           }]);
-          const randomDare = category.challenges[Math.floor(Math.random() * category.challenges.length)];
+
+          // Combine default challenges with custom dares
+          const allChallenges = [...category.challenges, ...customDares];
+          const randomDare = allChallenges[Math.floor(Math.random() * allChallenges.length)];
           setSelectedDare(randomDare);
           setIsSelecting(false);
-        }, 1000);
+        }, 700); // Reduced from 1000 to 500ms
       }
     };
 
@@ -326,7 +338,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   const handleChickenClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const categoryDares = categoryDrinkingDares[category.id as keyof typeof categoryDrinkingDares] || categoryDrinkingDares['home-party'];
     const randomDrinkingDare = categoryDares[Math.floor(Math.random() * categoryDares.length)];
     setSelectedDare(randomDrinkingDare);
