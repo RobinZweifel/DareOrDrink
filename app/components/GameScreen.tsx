@@ -33,6 +33,7 @@ const backgroundPattern = {
 
 interface GameScreenProps {
   category: {
+    id: string;
     name: string;
     challenges: string[];
   };
