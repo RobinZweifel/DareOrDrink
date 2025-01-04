@@ -39,6 +39,29 @@ interface GameScreenProps {
   onBack: () => void;
 }
 
+const drinkingDares = [
+  'Take a shot of the strongest alcohol available',
+  'Finish your entire drink in one go',
+  'Buy a round of shots for everyone in the group',
+  'Take two consecutive shots without a chaser',
+  'Sip from someone else\'s drink until they stop you',
+  'Drink a mix of three random liquors chosen by the group',
+  'Pay for the next round of drinks for the group',
+  'Chug a beer or glass of wine within 10 seconds',
+  'Drink from a random glass on the table (blindfolded)',
+  'Take a shot with your non-dominant hand only',
+  'Mix a shot with a condiment (like ketchup or hot sauce) and drink it',
+  'Drink every time someone says "no" for the next three minutes',
+  'Take a drink while balancing on one foot',
+  'Let the group choose your next drink (it must be gross)',
+  'Drink every time someone laughs for the next five minutes',
+  'Add a shot of liquor to your current drink and finish it',
+  'Share a drink with the person to your right, Lady and the Tramp style',
+  'Take a double shot of anything clear (vodka, gin, etc.)',
+  'Drink every time your name is said until your next turn',
+  'Pour some of your drink into someone else\'s glass and finish theirs'
+];
+
 export default function GameScreen({ category, onBack }: GameScreenProps) {
   const [points, setPoints] = useState<Point[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -62,7 +85,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
       countdownRef.current = setInterval(() => {
         const timeSinceLastTouch = Date.now() - lastTouchTime;
         const remainingSeconds = Math.max(0, 5 - Math.floor(timeSinceLastTouch / 1000));
-        
+
         setCountdown(remainingSeconds);
 
         if (remainingSeconds === 0 && points.length > 0) {
@@ -94,7 +117,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
       .map((touch) => {
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
         const existingPoint = points.find(p => p.id === touch.identifier);
-        
+
         // If point already exists, keep its properties
         if (existingPoint) {
           return existingPoint;
@@ -176,7 +199,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
       const delay = 50 + (progress * progress * 800); // Starts fast (50ms), gets much slower
 
       // Make all circles outlined except the current one
-      setPoints(prevPoints => 
+      setPoints(prevPoints =>
         prevPoints.map((p, i) => ({
           ...p,
           isHighlighted: i === currentIndex,
@@ -193,14 +216,14 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         animationRef.current = setTimeout(animate, delay) as unknown as number;
       } else {
         // Final selection - keep the selected point solid
-        setPoints(prevPoints => 
+        setPoints(prevPoints =>
           prevPoints.map((p, i) => ({
             ...p,
             isHighlighted: i === selectedIndex,
             isSolid: i === selectedIndex
           }))
         );
-        
+
         // Show dare after delay
         setTimeout(() => {
           setPoints([{
@@ -219,25 +242,37 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   };
 
   const resetGame = () => {
+    console.log('resetGame');
+
     // First, clear all timers
     if (countdownRef.current) {
       clearInterval(countdownRef.current);
+      countdownRef.current = undefined;
     }
     if (animationRef.current) {
       clearTimeout(animationRef.current);
+      animationRef.current = undefined;
     }
 
-    // Then reset all state in one go
-    setSelectedDare(null);
+    // Reset all state in one go
     setPoints([]);
-    setIsSelecting(false);
+    setSelectedDare(null);
     setSelectedPoint(null);
+    setIsSelecting(false);
     setCountdown(5);
     setLastTouchTime(Date.now());
 
-    // Clear timer refs
-    countdownRef.current = undefined;
-    animationRef.current = undefined;
+    // Force a re-render delay to ensure clean state
+    setTimeout(() => {
+      if (gameAreaRef.current) {
+        gameAreaRef.current.style.display = 'none';
+        requestAnimationFrame(() => {
+          if (gameAreaRef.current) {
+            gameAreaRef.current.style.display = 'block';
+          }
+        });
+      }
+    }, 0);
   };
 
   const handlePlayAgain = () => {
@@ -253,7 +288,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         <h1 className="text-xl font-bold select-none">{category.name}</h1>
         <div className="flex-1" />
         {points.length > 0 && !isSelecting && !selectedDare && (
-          <Button 
+          <Button
             onClick={handleStart}
             className="gap-2"
           >
@@ -263,14 +298,14 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         )}
       </div>
 
-      <div 
+      <div
         ref={gameAreaRef}
         className="flex-1 relative touch-none select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchEnd}
-        style={{ 
+        style={{
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
           userSelect: 'none',
@@ -281,9 +316,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         {points.map(point => (
           <motion.div
             key={point.id}
-            className={`fixed rounded-full border-8 transition-all flex items-center justify-center select-none ${
-              point.isHighlighted ? 'shadow-lg' : ''
-            }`}
+            className={`fixed rounded-full border-8 transition-all flex items-center justify-center select-none ${point.isHighlighted ? 'shadow-lg' : ''
+              }`}
             animate={{
               left: selectedDare && point.isHighlighted ? '50vw' : point.x,
               top: selectedDare && point.isHighlighted ? '50vh' : point.y,
@@ -310,15 +344,15 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
             }}
             style={{
               borderColor: point.color,
-              backgroundColor: selectedDare && point.isHighlighted 
-                ? point.color 
-                : point.isSolid
+              backgroundColor: selectedDare && point.isHighlighted
                 ? point.color
-                : 'transparent',
+                : point.isSolid
+                  ? point.color
+                  : 'transparent',
               borderWidth: '8px',
               transition: 'all 0.15s ease-in-out',
-              boxShadow: point.isHighlighted 
-                ? `0 0 30px ${point.color}66` 
+              boxShadow: point.isHighlighted
+                ? `0 0 30px ${point.color}66`
                 : 'none',
             }}
           >
@@ -331,15 +365,41 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
                 <p className="text-3xl font-bold text-center">
                   {selectedDare}
                 </p>
-                <Button 
-                  size="lg"
-                  variant="outline"
-                  onClick={handlePlayAgain}
-                  className="gap-2 text-lg px-8 bg-white/10 hover:bg-white/20 border-white text-white"
-                >
-                  <RotateCcw className="h-5 w-5" />
-                  Play Again
-                </Button>
+                <div className="flex flex-col gap-4 w-full items-center">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const randomDrinkingDare = drinkingDares[Math.floor(Math.random() * drinkingDares.length)];
+                      setSelectedDare(randomDrinkingDare);
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const randomDrinkingDare = drinkingDares[Math.floor(Math.random() * drinkingDares.length)];
+                      setSelectedDare(randomDrinkingDare);
+                    }}
+                    className="gap-2 text-base px-6 py-2 bg-white/10 hover:bg-white/20 border border-white text-white w-full max-w-sm rounded-md flex items-center justify-center active:bg-white/30"
+                  >
+                    🐔 Chicken (Take a Drink Instead)
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handlePlayAgain();
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handlePlayAgain();
+                    }}
+                    className="gap-2 text-base px-6 py-2 bg-white/10 hover:bg-white/20 border border-white text-white w-full max-w-sm rounded-md flex items-center justify-center active:bg-white/30"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Play Again
+                  </button>
+                </div>
               </motion.div>
             )}
           </motion.div>
@@ -350,11 +410,11 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
           <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
             <motion.div
               initial={{ scale: 1, opacity: 0.3 }}
-              animate={{ 
+              animate={{
                 scale: [1, 1.4, 1],
                 opacity: [0.3, 1, 0.3],
               }}
-              transition={{ 
+              transition={{
                 duration: 1,
                 repeat: Infinity,
                 ease: "easeInOut"
