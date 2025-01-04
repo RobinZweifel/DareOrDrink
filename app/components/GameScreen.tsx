@@ -149,8 +149,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
 
   const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
-    // Only clear points if we're not selecting and there's no selected point
-    if (!isSelecting && !selectedPoint) {
+    // Only clear points if we're not selecting and there's no dare showing
+    if (!isSelecting && !selectedDare) {
       if (e.touches.length === 0) {
         setPoints([]);
       } else {
