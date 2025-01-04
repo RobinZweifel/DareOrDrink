@@ -62,6 +62,49 @@ const drinkingDares = [
   'Pour some of your drink into someone else\'s glass and finish theirs'
 ];
 
+const categoryDrinkingDares = {
+  'bar-club': [
+    'Pay for the next round of drinks for the group',
+    'Take a shot of the strongest alcohol available',
+    'Buy a round of shots for everyone',
+    'Drink a mix of three random liquors chosen by the group',
+    'Chug a beer within 10 seconds',
+    'Take a shot with your non-dominant hand',
+    'Let the bartender choose your next drink',
+    'Order the most expensive drink at the bar'
+  ],
+  'home-party': [
+    'Take two shots back to back',
+    'Finish your drink in one go',
+    'Let someone mix you a mystery drink',
+    'Drink every time someone laughs for 2 minutes',
+    'Play rock paper scissors - loser drinks',
+    'Do a handstand and take a drink (with help)',
+    'Take a drink while someone else holds your glass',
+    'Let everyone add something to your drink'
+  ],
+  'restaurant': [
+    'Order a drink without looking at the menu',
+    'Drink your beverage without using your hands',
+    'Take a shot of hot sauce instead of alcohol',
+    'Let the waiter choose your drink',
+    'Finish everyone\'s drinks at the table',
+    'Order the most colorful cocktail available',
+    'Drink with your pinky up for the rest of the meal',
+    'Mix all your table\'s drinks together and take a sip'
+  ],
+  'date-night': [
+    'Share one drink with two straws',
+    'Take body shots off each other',
+    'Play "never have I ever" - 3 rounds',
+    'Feed each other drinks without using hands',
+    'Create and drink a romantic cocktail together',
+    'Take turns guessing each other\'s drinks blindfolded',
+    'Drink every time your partner compliments you',
+    'Mix each other\'s perfect drink'
+  ]
+};
+
 export default function GameScreen({ category, onBack }: GameScreenProps) {
   const [points, setPoints] = useState<Point[]>([]);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -279,6 +322,15 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
     resetGame();
   };
 
+  const handleChickenClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const categoryDares = categoryDrinkingDares[category.id as keyof typeof categoryDrinkingDares] || categoryDrinkingDares['home-party'];
+    const randomDrinkingDare = categoryDares[Math.floor(Math.random() * categoryDares.length)];
+    setSelectedDare(randomDrinkingDare);
+  };
+
   return (
     <div className="min-h-screen flex flex-col select-none" style={backgroundPattern}>
       <div className="flex items-center gap-4 p-4 border-b bg-white/80 backdrop-blur-sm select-none">
@@ -321,8 +373,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
             animate={{
               left: selectedDare && point.isHighlighted ? '50vw' : point.x,
               top: selectedDare && point.isHighlighted ? '50vh' : point.y,
-              width: selectedDare && point.isHighlighted ? '100vw' : '6rem',
-              height: selectedDare && point.isHighlighted ? '100vw' : '6rem',
+              width: selectedDare && point.isHighlighted ? '100vw' : '8rem',
+              height: selectedDare && point.isHighlighted ? '100vw' : '8rem',
               x: '-50%',
               y: selectedDare && point.isHighlighted ? '-50%' : '-50%',
               scale: point.isHighlighted && !selectedDare ? 1.25 : 1,
@@ -330,8 +382,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
             initial={{
               left: point.x,
               top: point.y,
-              width: '6rem',
-              height: '6rem',
+              width: '8rem',
+              height: '8rem',
               x: '-50%',
               y: '-50%',
               scale: 0,
@@ -367,18 +419,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
                 </p>
                 <div className="flex flex-col gap-4 w-full items-center">
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const randomDrinkingDare = drinkingDares[Math.floor(Math.random() * drinkingDares.length)];
-                      setSelectedDare(randomDrinkingDare);
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const randomDrinkingDare = drinkingDares[Math.floor(Math.random() * drinkingDares.length)];
-                      setSelectedDare(randomDrinkingDare);
-                    }}
+                    onClick={handleChickenClick}
+                    onTouchEnd={handleChickenClick}
                     className="gap-2 text-base px-6 py-2 bg-white/10 hover:bg-white/20 border border-white text-white w-full max-w-sm rounded-md flex items-center justify-center active:bg-white/30"
                   >
                     🐔 Chicken (Take a Drink Instead)

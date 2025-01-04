@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import GameScreen from './components/GameScreen';
+import CategoryCard from './components/CategoryCard';
+import { Beer, Home as HomeIcon, Palmtree, UtensilsCrossed, Plane, Heart } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const categories = [
   {
@@ -78,42 +80,6 @@ const categories = [
     ]
   },
   {
-    id: 'outdoor',
-    name: 'Outdoor Dares',
-    challenges: [
-      'Kiss someone in the group in front of strangers',
-      'Swim in your underwear',
-      'Flash someone in the group for 5 seconds',
-      'Run to the nearest stranger and say, "I love you"',
-      'Play "spin the bottle" with random beach items',
-      'Write a dirty word in the sand',
-      'Give someone a back massage while shirtless',
-      'Lick a friend\'s neck',
-      'Pretend to seduce a tree',
-      'Take a dare from a stranger',
-      'Do a sexy dance in public',
-      'Take a suggestive photo with a statue',
-      'Ask a stranger to rate your attractiveness',
-      'Give someone a piggyback ride for 2 minutes',
-      'Start a water fight with someone',
-      'Do your best Baywatch run',
-      'Make out with someone in the ocean',
-      'Create a human pyramid with strangers',
-      'Do a body shot off someone in public',
-      'Start a flash mob dance',
-      'Take a sexy photo with a random object',
-      'Play leapfrog with strangers',
-      'Give someone a shoulder massage in public',
-      'Do a handstand while someone holds your legs',
-      'Start a game of tag with random people',
-      'Do your best mermaid/merman pose',
-      'Create a human chain with strangers',
-      'Play chicken fight with someone',
-      'Do a trust fall with a stranger',
-      'Start a conga line on the beach'
-    ]
-  },
-  {
     id: 'restaurant',
     name: 'Restaurant Dares',
     challenges: [
@@ -150,42 +116,75 @@ const categories = [
     ]
   },
   {
-    id: 'vacation',
-    name: 'Vacation/Travel Dares',
+    id: 'date-night',
+    name: 'Date Night Dares',
     challenges: [
-      'Take a photo pretending to kiss a stranger',
-      'Whisper, "You\'re gorgeous" to someone in a foreign language',
-      'Dance seductively in a public spot',
-      'Flash your underwear for a quick photo',
-      'Hug a stranger and don\'t let go for 10 seconds',
-      'Swap a piece of clothing with someone in the group',
-      'Pretend to be a couple with someone in the group and convince a stranger',
-      'Try to join a stranger\'s conversation',
-      'Kiss someone on the forehead – stranger or not',
-      'Buy a stranger a drink and ask if they want to "hang out"',
-      'Get a stranger to teach you a local pickup line',
-      'Do a sexy photoshoot with a local landmark',
-      'Start a pool party with strangers',
-      'Get someone to apply sunscreen on your back seductively',
-      'Create a vacation romance story with a stranger',
-      'Do a striptease with a local souvenir',
-      'Get someone to teach you a "local tradition" you made up',
-      'Take a sensual yoga pose in a public place',
-      'Get a stranger to rate your accent',
-      'Do a sexy walk down the beach',
-      'Get someone to feed you local food',
-      'Create a romantic scene in front of a sunset',
-      'Get three strangers to join your "bachelor/bachelorette" party',
-      'Do a seductive dance with local music',
-      'Get someone to write something flirty on your body',
-      'Start a beach volleyball game with strangers',
-      'Get someone to teach you a "traditional" dance you made up',
-      'Take a "couple photo" with a stranger',
-      'Get someone to join your fake music video',
-      'Create a flash mob at a tourist spot'
+      'Feed each other dessert without using hands',
+      'Slow dance in public for one full song',
+      'Write a love note and hide it somewhere for your date to find',
+      'Give each other sensual hand massages under the table',
+      'Take a couples selfie in the most romantic spot you can find',
+      'Whisper your favorite thing about each other in public',
+      'Create a romantic scavenger hunt with 3 clues',
+      'Recreate your first kiss',
+      'Give each other three genuine compliments',
+      'Share your most embarrassing dating story',
+      'Do a couples yoga pose in public',
+      'Write "I love you" using only body movements',
+      'Serenade each other with a love song',
+      'Play footsie throughout dinner',
+      'Create a dance routine together',
+      'Take turns feeding each other with chopsticks',
+      'Make up a story about how you met (tell strangers)',
+      'Give each other pet names and use them all night',
+      'Draw portraits of each other blindfolded',
+      'Play truth or dare but only romantic dares',
+      'Take turns giving each other neck massages',
+      'Share your first impressions of each other',
+      'Act out how you\'d propose',
+      'Write love poems for each other in 2 minutes',
+      'Do the "Lady and the Tramp" spaghetti scene',
+      'Slow dance in an elevator',
+      'Leave secret admirer notes for each other',
+      'Take artistic silhouette photos together',
+      'Create a signature couple handshake',
+      'Plan your dream honeymoon in 5 minutes'
     ]
   }
 ];
+
+const categoryMetadata = {
+  'bar-club': {
+    icon: Beer,
+    description: 'Spice up your night out with daring challenges',
+    color: '#ef4444'  // red
+  },
+  'home-party': {
+    icon: HomeIcon,
+    description: 'Turn up the heat at your house party',
+    color: '#3b82f6'  // blue
+  },
+  'outdoor': {
+    icon: Palmtree,
+    description: 'Take your adventures to the great outdoors',
+    color: '#22c55e'  // green
+  },
+  'restaurant': {
+    icon: UtensilsCrossed,
+    description: 'Make dining out more exciting',
+    color: '#f97316'  // orange
+  },
+  'vacation': {
+    icon: Plane,
+    description: 'Add some thrill to your travels',
+    color: '#a855f7'  // purple
+  },
+  'date-night': {
+    icon: Heart,
+    description: 'Romantic challenges for couples',
+    color: '#ec4899'  // pink
+  }
+};
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<null | typeof categories[0]>(null);
@@ -195,21 +194,46 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-4" style={{ backgroundColor: '#eff6fb' }}>
-      <h1 className="text-4xl font-bold text-center mb-8">Choose a Category</h1>
-      <div className="max-w-md mx-auto space-y-4">
-        {categories.map(category => (
-          <Card
-            key={category.id}
-            className="p-4 cursor-pointer hover:bg-accent"
-            onClick={() => setSelectedCategory(category)}
-          >
-            <h2 className="text-xl font-semibold">{category.name}</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {category.challenges.length} dares
-            </p>
-          </Card>
-        ))}
+    <main className="min-h-screen p-4 md:p-8" style={{ backgroundColor: '#eff6fb' }}>
+      <div className="max-w-4xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
+            Choose Your Adventure
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Select a category to start the game
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {categories.map((category, index) => {
+            const metadata = categoryMetadata[category.id as keyof typeof categoryMetadata];
+
+            return (
+              <motion.div
+                key={category.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  transition: { delay: index * 0.1 }
+                }}
+              >
+                <CategoryCard
+                  name={category.name}
+                  description={metadata.description}
+                  icon={metadata.icon}
+                  color={metadata.color}
+                  onClick={() => setSelectedCategory(category)}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </main>
   );
