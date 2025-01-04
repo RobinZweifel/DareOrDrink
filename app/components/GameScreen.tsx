@@ -333,8 +333,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col select-none" style={backgroundPattern}>
-      <div className="flex items-center gap-4 p-4 border-b bg-white/80 backdrop-blur-sm select-none">
+    <div className="fixed inset-0 flex flex-col select-none overflow-hidden" style={backgroundPattern}>
+      <div className="flex items-center gap-4 p-4 border-b bg-white/80 backdrop-blur-sm select-none z-50">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-6 w-6" />
         </Button>
@@ -353,7 +353,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
 
       <div
         ref={gameAreaRef}
-        className="flex-1 relative touch-none select-none"
+        className="flex-1 relative touch-none select-none overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -362,7 +362,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
           userSelect: 'none',
-          touchAction: 'none'
+          touchAction: 'none',
+          height: 'calc(100vh - 73px)' // Account for header height
         }}
       >
         {/* Show points */}
