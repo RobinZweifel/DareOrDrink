@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Play, RotateCcw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -13,6 +13,7 @@ interface Point {
   color: string;
   number: number;
   isHighlighted?: boolean;
+  backgroundColor?: string;
 }
 
 // Array of vibrant colors
@@ -44,8 +45,40 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedDare, setSelectedDare] = useState<string | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<Point | null>(null);
+  const [countdown, setCountdown] = useState<number>(5);
+  const [lastTouchTime, setLastTouchTime] = useState<number>(Date.now());
   const animationRef = useRef<number>();
   const gameAreaRef = useRef<HTMLDivElement>(null);
+  const countdownRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    if (points.length > 0) {
+      setLastTouchTime(Date.now());
+      setCountdown(5);
+    }
+  }, [points.length]);
+
+  useEffect(() => {
+    if (!isSelecting && !selectedDare) {
+      countdownRef.current = setInterval(() => {
+        const timeSinceLastTouch = Date.now() - lastTouchTime;
+        const remainingSeconds = Math.max(0, 5 - Math.floor(timeSinceLastTouch / 1000));
+        
+        setCountdown(remainingSeconds);
+
+        if (remainingSeconds === 0 && points.length > 0) {
+          clearInterval(countdownRef.current);
+          handleStart();
+        }
+      }, 100);
+
+      return () => {
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+        }
+      };
+    }
+  }, [lastTouchTime, isSelecting, selectedDare]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isSelecting || selectedDare) return;
@@ -59,19 +92,32 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         const touchY = touch.clientY;
         return touchY > rect.top && touchY < rect.bottom;
       })
-      .map((touch, index) => {
+      .map((touch) => {
         const randomColor = colors[Math.floor(Math.random() * colors.length)];
+        const existingPoint = points.find(p => p.id === touch.identifier);
+        
+        // If point already exists, keep its properties
+        if (existingPoint) {
+          return existingPoint;
+        }
+
+        // Create new point at exact touch position
         return {
           id: touch.identifier,
-          x: touch.clientX - rect.left,
-          y: touch.clientY - rect.top,
+          x: touch.pageX,
+          y: touch.pageY,
           color: randomColor,
-          number: index + 1,
+          number: points.length + 1,
           isHighlighted: false,
         };
       });
 
-    setPoints(newPoints);
+    setPoints(prevPoints => {
+      // Keep existing points that are still being touched
+      const existingIds = newPoints.map(p => p.id);
+      const remainingPoints = prevPoints.filter(p => existingIds.includes(p.id));
+      return [...remainingPoints, ...newPoints.filter(p => !remainingPoints.find(rp => rp.id === p.id))];
+    });
     setSelectedPoint(null);
   };
 
@@ -87,14 +133,14 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         const touchY = touch.clientY;
         return touchY > rect.top && touchY < rect.bottom;
       })
-      .map((touch, index) => {
+      .map((touch) => {
         const existingPoint = points.find(p => p.id === touch.identifier);
         return {
           id: touch.identifier,
-          x: touch.clientX - rect.left,
-          y: touch.clientY - rect.top,
+          x: touch.pageX,
+          y: touch.pageY,
           color: existingPoint?.color || colors[Math.floor(Math.random() * colors.length)],
-          number: existingPoint?.number || index + 1,
+          number: existingPoint?.number || points.length + 1,
           isHighlighted: false,
         };
       });
@@ -136,7 +182,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
       setPoints(prevPoints => 
         prevPoints.map((p, i) => ({
           ...p,
-          isHighlighted: i === currentIndex
+          isHighlighted: i === currentIndex,
+          isOutlined: i === currentIndex && iterations % 2 === 0 // Alternate between filled and outlined
         }))
       );
 
@@ -146,37 +193,52 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
       if (iterations < maxIterations) {
         animationRef.current = setTimeout(animate, delay) as unknown as number;
       } else {
-        // Final selection
-        const finalPoints = points.map((p, i) => ({
-          ...p,
-          isHighlighted: i === selectedIndex
-        }));
-        setPoints(finalPoints);
+        // Final selection - keep only the selected point
+        const selectedPoint = points[selectedIndex];
         
-        // Store the selected point
-        setSelectedPoint(finalPoints[selectedIndex]);
+        // Keep only the selected point, maintaining its original position
+        setPoints([{
+          ...selectedPoint,
+          isHighlighted: true,
+          isOutlined: false
+        }]);
         
-        // Keep only the selected point after a delay
+        // Show dare after delay
         setTimeout(() => {
-          setPoints([finalPoints[selectedIndex]]);
-          
-          // Wait 3 seconds before showing the dare
-          setTimeout(() => {
-            const randomDare = category.challenges[Math.floor(Math.random() * category.challenges.length)];
-            setSelectedDare(randomDare);
-            setIsSelecting(false);
-          }, 3000);
-        }, 1000);
+          const randomDare = category.challenges[Math.floor(Math.random() * category.challenges.length)];
+          setSelectedDare(randomDare);
+          setIsSelecting(false);
+        }, 3000);
       }
     };
 
     animate();
   };
 
-  const handlePlayAgain = () => {
-    setPoints([]);
+  const resetGame = () => {
+    // First, clear all timers
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+    }
+    if (animationRef.current) {
+      clearTimeout(animationRef.current);
+    }
+
+    // Then reset all state in one go
     setSelectedDare(null);
+    setPoints([]);
+    setIsSelecting(false);
     setSelectedPoint(null);
+    setCountdown(5);
+    setLastTouchTime(Date.now());
+
+    // Clear timer refs
+    countdownRef.current = undefined;
+    animationRef.current = undefined;
+  };
+
+  const handlePlayAgain = () => {
+    resetGame();
   };
 
   return (
@@ -193,7 +255,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
             className="gap-2"
           >
             <Play className="h-4 w-4" />
-            Start
+            Start ({countdown}s)
           </Button>
         )}
       </div>
@@ -212,64 +274,113 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
           touchAction: 'none'
         }}
       >
-        {/* Show either the active points or the selected point */}
-        {(selectedPoint ? [selectedPoint] : points).map(point => (
-          <div
+        {/* Show points */}
+        {points.map(point => (
+          <motion.div
             key={point.id}
-            className={`absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border-8 transition-all flex items-center justify-center select-none ${
-              point.isHighlighted ? 'scale-125 shadow-lg' : 'scale-100'
+            className={`fixed rounded-full border-8 transition-all flex items-center justify-center select-none ${
+              point.isHighlighted ? 'shadow-lg' : ''
             }`}
-            style={{
+            animate={{
+              left: selectedDare && point.isHighlighted ? '50vw' : point.x,
+              top: selectedDare && point.isHighlighted ? '50vh' : point.y,
+              width: selectedDare && point.isHighlighted ? '100vw' : '6rem',
+              height: selectedDare && point.isHighlighted ? '100vw' : '6rem',
+              x: '-50%',
+              y: selectedDare && point.isHighlighted ? '-50%' : '-50%',
+              scale: point.isHighlighted && !selectedDare ? 1.25 : 1,
+            }}
+            initial={{
               left: point.x,
               top: point.y,
+              width: '6rem',
+              height: '6rem',
+              x: '-50%',
+              y: '-50%',
+              scale: 0,
+            }}
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 200,
+              mass: 1,
+            }}
+            style={{
               borderColor: point.color,
-              backgroundColor: point.isHighlighted 
+              backgroundColor: selectedDare && point.isHighlighted 
                 ? point.color 
+                : point.isHighlighted && !selectedDare
+                ? point.isOutlined ? 'transparent' : point.color
                 : `${point.color}33`,
+              borderWidth: point.isHighlighted ? '12px' : '8px',
               transition: 'all 0.15s ease-in-out',
-              WebkitTouchCallout: 'none',
-              WebkitUserSelect: 'none',
-              userSelect: 'none',
+              boxShadow: point.isHighlighted && !selectedDare 
+                ? `0 0 30px ${point.color}66` 
+                : 'none',
             }}
           >
-            <span 
-              className="text-3xl font-bold transition-colors select-none" 
-              style={{ 
-                color: point.isHighlighted ? 'white' : point.color,
-                WebkitTouchCallout: 'none',
-                WebkitUserSelect: 'none',
-                userSelect: 'none',
-              }}
-            >
-              {point.number}
-            </span>
-          </div>
+            {selectedDare && point.isHighlighted && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center gap-8 p-8 text-white max-w-2xl mx-auto"
+              >
+                <p className="text-3xl font-bold text-center">
+                  {selectedDare}
+                </p>
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  onClick={handlePlayAgain}
+                  className="gap-2 text-lg px-8 bg-white/10 hover:bg-white/20 border-white text-white"
+                >
+                  <RotateCcw className="h-5 w-5" />
+                  Play Again
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
         ))}
 
-        <AnimatePresence>
-          {selectedDare && (
+        {/* Countdown Display */}
+        {points.length > 0 && !isSelecting && !selectedDare && (
+          <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+              initial={{ scale: 1, opacity: 0.3 }}
+              animate={{ 
+                scale: [1, 1.4, 1],
+                opacity: [0.3, 1, 0.3],
+              }}
+              transition={{ 
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="flex flex-col items-center justify-center"
             >
-              <div className="w-4/5 max-w-lg">
-                <Card className="p-8 text-center shadow-xl">
-                  <p className="text-2xl font-bold mb-8">{selectedDare}</p>
-                  <Button 
-                    size="lg"
-                    onClick={handlePlayAgain}
-                    className="gap-2 text-lg px-8"
-                  >
-                    <RotateCcw className="h-5 w-5" />
-                    Play Again
-                  </Button>
-                </Card>
-              </div>
+              <motion.div
+                key={countdown}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                className="text-[200px] leading-none font-black text-primary"
+                style={{
+                  textShadow: '0 0 40px rgba(79, 70, 229, 0.3)',
+                  WebkitTextStroke: '2px rgba(79, 70, 229, 0.2)',
+                }}
+              >
+                {countdown}
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                className="text-2xl font-medium text-primary mt-4"
+              >
+                starting soon
+              </motion.div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   );
