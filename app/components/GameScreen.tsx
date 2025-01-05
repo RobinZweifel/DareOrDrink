@@ -122,7 +122,8 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   useEffect(() => {
     const stored = localStorage.getItem(`customDares-${category.id}`);
     if (stored) {
-      setCustomDares(JSON.parse(stored));
+      const parsedDares = JSON.parse(stored);
+      setCustomDares(parsedDares);
     }
   }, [category.id]);
 
@@ -236,22 +237,26 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
     }
   };
 
+  const getRandomDare = () => {
+    // Combine default challenges with custom dares
+    const allDares = [...category.challenges, ...customDares];
+    return allDares[Math.floor(Math.random() * allDares.length)];
+  };
+
   const handleStart = () => {
     if (points.length === 0) return;
     setIsSelecting(true);
     setSelectedDare(null);
 
     let iterations = 0;
-    const maxIterations = 20; // Reduced from 40 to 20 for faster selection
+    const maxIterations = 20;
     const selectedIndex = Math.floor(Math.random() * points.length);
     let currentIndex = 0;
 
     const animate = () => {
-      // Calculate delay that increases over time for slowing effect
       const progress = iterations / maxIterations;
-      const delay = 25 + (progress * progress * 400); // Reduced initial delay from 50 to 25, and max slowdown from 800 to 400
+      const delay = 25 + (progress * progress * 400);
 
-      // Make all circles outlined except the current one
       setPoints(prevPoints =>
         prevPoints.map((p, i) => ({
           ...p,
@@ -260,15 +265,12 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
         }))
       );
 
-      // Move to next circle
       currentIndex = (currentIndex + 1) % points.length;
       iterations++;
 
       if (iterations < maxIterations || currentIndex !== selectedIndex) {
-        // Keep going until we hit both the minimum iterations AND land on the selected index
         animationRef.current = setTimeout(animate, delay) as unknown as number;
       } else {
-        // Final selection - keep the selected point solid
         setPoints(prevPoints =>
           prevPoints.map((p, i) => ({
             ...p,
@@ -277,20 +279,15 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
           }))
         );
 
-        // Show dare after delay
         setTimeout(() => {
           setPoints([{
             ...points[selectedIndex],
             isHighlighted: true,
             isSolid: true
           }]);
-
-          // Combine default challenges with custom dares
-          const allChallenges = [...category.challenges, ...customDares];
-          const randomDare = allChallenges[Math.floor(Math.random() * allChallenges.length)];
-          setSelectedDare(randomDare);
+          setSelectedDare(getRandomDare());
           setIsSelecting(false);
-        }, 700); // Reduced from 1000 to 500ms
+        }, 700);
       }
     };
 
@@ -338,7 +335,7 @@ export default function GameScreen({ category, onBack }: GameScreenProps) {
   const handleChickenClick = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
+    
     const categoryDares = categoryDrinkingDares[category.id as keyof typeof categoryDrinkingDares] || categoryDrinkingDares['home-party'];
     const randomDrinkingDare = categoryDares[Math.floor(Math.random() * categoryDares.length)];
     setSelectedDare(randomDrinkingDare);
